@@ -16,6 +16,7 @@ dependencies = [
     "pyyaml",
     "requests",
     "fastapi",
+    "python-multipart",
     "uvicorn",
     "pydantic",
 ]
