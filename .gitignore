@@ -1,0 +1,20 @@
+# 配置文件（包含敏感密钥）
+config.yaml
+*.local.yaml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+uploads/
+temp/
+
+# 其他
+*.log
