@@ -9,8 +9,7 @@ description = "轻量级 RAG 知识库管理工具"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "markitdown[pdf,docx,xlsx,pptx,epub]",
-    "chonkie",
+    "unstructured[all-docs]",
     "qdrant-client",
     "rank-bm25",
     "pyyaml",

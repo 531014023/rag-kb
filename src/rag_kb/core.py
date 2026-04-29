@@ -6,32 +6,32 @@ from pathlib import Path
 
 from .config import config
 from .document_parser import DocumentParser
-from .text_chunker import TextChunker
 from .vector_store import upload_chunks, search_chunks, delete_chunks, list_collections
 
 
 def upload(file_path: str, collection_name: str = "default") -> dict:
     """上传文档"""
     try:
-        # 解析文档
         parser = DocumentParser()
-        text = parser.parse(file_path)
-
-        if not text or not text.strip():
-            return {"success": False, "message": "文档内容为空"}
-
-        # 分块
         chunk_cfg = config.get("chunking", {})
-        chunker = TextChunker(
-            chunk_size=chunk_cfg.get("chunk_size", 500),
-            chunk_overlap=chunk_cfg.get("chunk_overlap", 50)
-        )
-        chunks = chunker.chunk(text)
+        chunk_size = chunk_cfg.get("chunk_size", 500)
+
+        # 解析并分块
+        chunks = parser.parse_and_chunk(file_path, chunk_size=chunk_size)
+
+        if not chunks:
+            return {"success": False, "message": "文档内容为空"}
 
         # 构建 chunk 数据
         doc_id = hashlib.md5(Path(file_path).name.encode()).hexdigest()
         chunk_data = [
-            {"text": c, "doc_id": doc_id, "source": Path(file_path).name, "chunk_index": i}
+            {
+                "text": c["text"],
+                "type": c.get("type", "NarrativeText"),
+                "doc_id": doc_id,
+                "source": Path(file_path).name,
+                "chunk_index": i,
+            }
             for i, c in enumerate(chunks)
         ]
 
@@ -49,11 +49,12 @@ def upload_text(text: str, collection_name: str = "default", source: str = "dire
         doc_id = hashlib.md5(text.encode()).hexdigest()
 
         chunk_cfg = config.get("chunking", {})
-        chunker = TextChunker(
-            chunk_size=chunk_cfg.get("chunk_size", 500),
-            chunk_overlap=chunk_cfg.get("chunk_overlap", 50)
-        )
-        chunks = chunker.chunk(text)
+        chunk_size = chunk_cfg.get("chunk_size", 500)
+
+        # 简单按字符分块
+        chunks = []
+        for i in range(0, len(text), chunk_size):
+            chunks.append(text[i : i + chunk_size])
 
         chunk_data = [
             {"text": c, "doc_id": doc_id, "source": source, "chunk_index": i}
