@@ -2,7 +2,10 @@
 RAG KB FastAPI 服务
 提供所有 CLI 操作的 REST API，长期运行避免模块加载延迟
 """
-from fastapi import FastAPI, HTTPException
+import os
+import hashlib
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -21,10 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-class UploadRequest(BaseModel):
-    file_path: str
-    collection: str = "default"
+# 上传文件保存目录
+UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 
 class UploadTextRequest(BaseModel):
@@ -58,9 +60,22 @@ async def get_collections():
 
 
 @app.post("/upload")
-async def upload_file(req: UploadRequest):
+async def upload_file(file: UploadFile = File(...), collection: str = Form("default")):
+    """上传文件（multipart/form-data）"""
     try:
-        result = upload(req.file_path, req.collection)
+        # 保存文件到服务端
+        file_content = await file.read()
+        file_name = file.filename or "uploaded_file"
+
+        # 生成唯一文件名避免冲突
+        unique_name = f"{hashlib.md5(file_content).hexdigest()[:8]}_{file_name}"
+        file_path = UPLOAD_DIR / unique_name
+
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+
+        # 调用现有上传逻辑
+        result = upload(str(file_path), collection)
         if not result.get("success"):
             raise HTTPException(status_code=400, detail=result.get("message", "上传失败"))
         return result
@@ -107,6 +122,7 @@ def main():
     import uvicorn
     port = 8081
     print(f"启动 RAG 服务: http://localhost:{port}")
+    print(f"上传文件保存目录: {UPLOAD_DIR}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
