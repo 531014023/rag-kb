@@ -2,10 +2,6 @@
 RAG KB FastAPI 服务
 提供所有 CLI 操作的 REST API，长期运行避免模块加载延迟
 """
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -13,6 +9,7 @@ from typing import Optional
 
 from rag_kb.core import upload, upload_text, search, delete, list_all_collections
 from rag_kb.config import config
+
 
 app = FastAPI(title="RAG Knowledge Base API", version="1.0.0")
 

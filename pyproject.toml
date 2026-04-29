@@ -22,7 +22,7 @@ dependencies = [
 
 [project.scripts]
 rag = "rag_kb.cli:run_cli"
-rag-server = "rag_kb.server:main"
+rag-server = "scripts.server:main"
 
 [project.optional-dependencies]
 dev = ["pytest", "black", "ruff"]
