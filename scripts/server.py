@@ -59,18 +59,28 @@ async def get_collections():
 
 @app.post("/upload")
 async def upload_file(req: UploadRequest):
-    result = upload(req.file_path, req.collection)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("message"))
-    return result
+    try:
+        result = upload(req.file_path, req.collection)
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("message", "上传失败"))
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"服务器错误: {str(e)}")
 
 
 @app.post("/upload-text")
 async def upload_text_api(req: UploadTextRequest):
-    result = upload_text(req.text, req.collection, req.source)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("message"))
-    return result
+    try:
+        result = upload_text(req.text, req.collection, req.source)
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("message", "上传失败"))
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"服务器错误: {str(e)}")
 
 
 @app.post("/search")
