@@ -251,11 +251,9 @@ rag list
 | PowerPoint | `.pptx`, `.ppt` |
 | Word | `.docx`, `.doc` |
 | Excel | `.xlsx`, `.xls` |
-| 图片 | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp` |
-| 音频 | `.mp3`, `.wav`, `.flac`, `.aac`, `.ogg` |
-| HTML | `.html`, `.htm` |
 | EPUB | `.epub` |
-| 文本 | `.txt` |
+| HTML | `.html`, `.htm` |
+| 文本 | `.txt`, `.md` |
 | 结构化文本 | `.csv`, `.json`, `.xml` |
 | ZIP | `.zip`（遍历并转换其中每个文件） |
 
