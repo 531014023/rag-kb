@@ -24,8 +24,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 上传文件保存目录
-UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
+# 从配置读取服务器设置
+server_cfg = config.get("server", {})
+HOST = server_cfg.get("host", "0.0.0.0")
+PORT = server_cfg.get("port", 8081)
+UPLOAD_DIR_NAME = server_cfg.get("upload_dir", "uploads")
+UPLOAD_DIR = Path(__file__).parent.parent / UPLOAD_DIR_NAME
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
@@ -123,12 +127,44 @@ async def delete_api(req: DeleteRequest):
     return result
 
 
+@app.post("/upload-folder")
+async def upload_folder(files: list[UploadFile] = File(...), collection: str = Form("default")):
+    """上传文件夹（多个文件）"""
+    results = []
+    for file in files:
+        file_path = None
+        try:
+            file_content = await file.read()
+            file_name = file.filename or "uploaded_file"
+            unique_name = f"{hashlib.md5(file_content).hexdigest()[:8]}_{file_name}"
+            file_path = UPLOAD_DIR / unique_name
+
+            with open(file_path, "wb") as f:
+                f.write(file_content)
+
+            result = upload(str(file_path), collection)
+            results.append({"file": file_name, "result": result})
+        except Exception as e:
+            results.append({"file": file_name, "result": {"success": False, "message": str(e)}})
+        finally:
+            if file_path and file_path.exists():
+                file_path.unlink()
+
+    success_count = sum(1 for r in results if r["result"].get("success"))
+    return {
+        "success": success_count == len(results),
+        "total": len(results),
+        "success_count": success_count,
+        "failed_count": len(results) - success_count,
+        "details": results
+    }
+
+
 def main():
     import uvicorn
-    port = 8081
-    print(f"启动 RAG 服务: http://localhost:{port}")
+    print(f"启动 RAG 服务: http://{HOST}:{PORT}")
     print(f"上传文件保存目录: {UPLOAD_DIR}")
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host=HOST, port=PORT)
 
 
 if __name__ == "__main__":
