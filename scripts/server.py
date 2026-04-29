@@ -90,40 +90,6 @@ async def upload_file(file: UploadFile = File(...), collection: str = Form("defa
             file_path.unlink()
 
 
-@app.post("/upload-folder")
-async def upload_folder(files: list[UploadFile] = File(...), collection: str = Form("default")):
-    """上传文件夹（多个文件）"""
-    results = []
-    for file in files:
-        file_path = None
-        try:
-            file_content = await file.read()
-            file_name = file.filename or "uploaded_file"
-            unique_name = f"{hashlib.md5(file_content).hexdigest()[:8]}_{file_name}"
-            file_path = UPLOAD_DIR / unique_name
-
-            with open(file_path, "wb") as f:
-                f.write(file_content)
-
-            result = upload(str(file_path), collection)
-            results.append({"file": file_name, "result": result})
-        except Exception as e:
-            results.append({"file": file_name, "result": {"success": False, "message": str(e)}})
-        finally:
-            if file_path and file_path.exists():
-                file_path.unlink()
-
-    # 汇总结果
-    success_count = sum(1 for r in results if r["result"].get("success"))
-    return {
-        "success": success_count == len(results),
-        "total": len(results),
-        "success_count": success_count,
-        "failed_count": len(results) - success_count,
-        "details": results
-    }
-
-
 @app.post("/upload-text")
 async def upload_text_api(req: UploadTextRequest):
     try:
