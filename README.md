@@ -112,6 +112,24 @@ rag-kb/
 └── pyproject.toml       # 项目配置
 ```
 
+## 支持的文件格式
+
+使用 MarkItDown 解析，支持以下文件格式：
+
+| 类型 | 扩展名 |
+|------|--------|
+| PDF | `.pdf` |
+| PowerPoint | `.pptx`, `.ppt` |
+| Word | `.docx`, `.doc` |
+| Excel | `.xlsx`, `.xls` |
+| 图片 | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp` |
+| 音频 | `.mp3`, `.wav`, `.flac`, `.aac`, `.ogg` |
+| HTML | `.html`, `.htm` |
+| EPUB | `.epub` |
+| 文本 | `.txt` |
+| 结构化文本 | `.csv`, `.json`, `.xml` |
+| ZIP | `.zip`（遍历并转换其中每个文件） |
+
 ## API 端点
 
 | 方法 | 路径 | 说明 |
