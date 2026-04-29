@@ -1,0 +1,35 @@
+# RAG Knowledge Base 配置模板
+
+# ============ 服务配置 ============
+server:
+  host: "0.0.0.0"
+  port: 8081
+  upload_dir: "uploads"
+
+# ============ Qdrant 配置 ============
+qdrant:
+  host: "localhost"
+  port: 6333
+  grpc_port: 6334
+  collection_default:
+    vector_size: 1024
+    distance: "COSINE"
+  enable_sparse: true
+
+# ============ Embedding 配置 ============
+embedding:
+  type: custom
+  api_url: "http://127.0.0.1:11434/v1/embeddings"
+  api_key: ""
+  model: "text-embedding-qwen3-embedding-0.6b"
+  timeout: 30
+
+# ============ 分块配置 ============
+chunking:
+  chunk_size: 800
+  chunk_overlap: 100
+
+# ============ CLI 默认值 ============
+default_collection: default
+default_top_k: 10
+max_top_k: 20
