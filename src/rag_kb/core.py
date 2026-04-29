@@ -17,6 +17,9 @@ def upload(file_path: str, collection_name: str = "default") -> dict:
         parser = DocumentParser()
         text = parser.parse(file_path)
 
+        if not text or not text.strip():
+            return {"success": False, "message": "文档内容为空"}
+
         # 分块
         chunk_cfg = config.get("chunking", {})
         chunker = TextChunker(
