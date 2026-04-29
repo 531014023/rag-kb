@@ -62,6 +62,7 @@ async def get_collections():
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...), collection: str = Form("default")):
     """上传文件（multipart/form-data）"""
+    file_path = None
     try:
         # 保存文件到服务端
         file_content = await file.read()
@@ -83,6 +84,10 @@ async def upload_file(file: UploadFile = File(...), collection: str = Form("defa
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"服务器错误: {str(e)}")
+    finally:
+        # 删除上传的临时文件
+        if file_path and file_path.exists():
+            file_path.unlink()
 
 
 @app.post("/upload-text")
