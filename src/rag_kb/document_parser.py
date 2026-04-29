@@ -1,6 +1,6 @@
 """
 文档解析模块 - 使用 MarkItDown 解析多种文档格式
-支持: PDF, PowerPoint, Word, Excel, 图片, 音频, HTML, EPUB, TXT, CSV, JSON, XML, ZIP
+支持: PDF, PowerPoint, Word, Excel, HTML, EPUB, Markdown, TXT, CSV, JSON, XML, ZIP
 """
 from markitdown import MarkItDown
 
