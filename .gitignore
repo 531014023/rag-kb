@@ -4,6 +4,7 @@ config.yaml
 
 # Python
 __pycache__/
+src/rag_kb/__pycache__/
 *.pyc
 *.pyo
 .env
