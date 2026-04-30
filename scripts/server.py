@@ -70,11 +70,13 @@ async def upload_file(file: UploadFile = File(...), collection: str = Form("defa
     try:
         # 保存文件到服务端
         file_content = await file.read()
-        file_name = file.filename or "uploaded_file"
-
-        # 生成唯一文件名避免冲突
-        unique_name = f"{hashlib.md5(file_content).hexdigest()[:8]}_{file_name}"
-        file_path = UPLOAD_DIR / unique_name
+        original_name = file.filename or "uploaded_file"
+        # 只保留原始文件扩展名，避免文件名编码问题
+        import re
+        ext = re.search(r"(\.[^.]+)$", original_name)
+        ext_str = ext.group(1) if ext else ""
+        safe_name = f"{hashlib.md5(file_content).hexdigest()[:8]}{ext_str}"
+        file_path = UPLOAD_DIR / safe_name
 
         with open(file_path, "wb") as f:
             f.write(file_content)
