@@ -28,6 +28,8 @@ embedding:
 chunking:
   chunk_size: 800
   chunk_overlap: 100
+  # SemanticChunker 使用的 embedding 模型（用于句子相似度计算）
+  embedding_model: "minishlab/potion-base-32M"
 
 # ============ CLI 默认值 ============
 default_collection: default

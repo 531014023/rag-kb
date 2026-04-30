@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .config import config
 from .document_parser import DocumentParser
+from .text_chunker import TextChunker
 from .vector_store import upload_chunks, search_chunks, delete_chunks, list_collections
 
 
@@ -15,9 +16,15 @@ def upload(file_path: str, collection_name: str = "default") -> dict:
         parser = DocumentParser()
         chunk_cfg = config.get("chunking", {})
         chunk_size = chunk_cfg.get("chunk_size", 500)
+        embedding_model = chunk_cfg.get("embedding_model", "minishlab/potion-base-32M")
 
-        # 解析并分块
-        chunks = parser.parse_and_chunk(file_path, chunk_size=chunk_size)
+        # 解析文档
+        elements = parser.parse(file_path)
+
+        # 将所有文本片段合并后分块
+        all_text = "\n\n".join(e["text"] for e in elements if e.get("text", "").strip())
+        chunker = TextChunker(chunk_size=chunk_size, embedding_model=embedding_model)
+        chunks = chunker.chunk(all_text)
 
         if not chunks:
             return {"success": False, "message": "文档内容为空"}
@@ -50,11 +57,12 @@ def upload_text(text: str, collection_name: str = "default", source: str = "dire
 
         chunk_cfg = config.get("chunking", {})
         chunk_size = chunk_cfg.get("chunk_size", 500)
+        embedding_model = chunk_cfg.get("embedding_model", "minishlab/potion-base-32M")
 
-        # 简单按字符分块
-        chunks = []
-        for i in range(0, len(text), chunk_size):
-            chunks.append(text[i : i + chunk_size])
+        # 语义分块
+        chunker = TextChunker(chunk_size=chunk_size, embedding_model=embedding_model)
+        chunk_dicts = chunker.chunk(text)
+        chunks = [c["text"] for c in chunk_dicts]
 
         chunk_data = [
             {"text": c, "doc_id": doc_id, "source": source, "chunk_index": i}
