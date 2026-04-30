@@ -20,6 +20,8 @@ services:
       - RAG_KB_CONFIG=/app/config.yaml
     volumes:
       - ./config.yaml:/app/config.yaml:ro
+      - ./src:/app/src        # 源代码挂载，覆盖镜像内的 src（开发用）
+      - ./scripts:/app/scripts
     ports:
       - "12007:12007"
     command: rag-server

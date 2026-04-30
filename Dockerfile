@@ -5,7 +5,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src/
 COPY scripts ./scripts/
-RUN pip install -e .
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -e .
 
 ENV PYTHONPATH=/app
 
