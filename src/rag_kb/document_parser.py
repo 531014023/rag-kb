@@ -7,6 +7,12 @@ from __future__ import annotations
 import json
 import mimetypes
 
+# Windows 默认不注册 .md 等后缀，主动注册
+mimetypes.add_type('text/markdown', '.md')
+mimetypes.add_type('text/x-markdown', '.mkd')
+mimetypes.add_type('text/markdown', '.markdown')
+mimetypes.add_type('application/epub+zip', '.epub')
+
 from bs4 import BeautifulSoup
 from chonkie import MarkdownChef, TableChef, TextChef
 from docx import Document as DocxDocument
@@ -26,13 +32,20 @@ def _parse_pdf(file_path: str) -> list[dict]:
 
 
 def _parse_markdown(file_path: str) -> list[dict]:
-    """使用 MarkdownChef 解析 md 文件，提取文本块、表格、代码块作为独立元素"""
+    """使用 MarkdownChef 解析 md 文件，提取文本块、表格、代码块作为独立元素
+
+    MarkdownChef 已经做了语义分块（按标题/段落），
+    因此这里直接使用 doc.chunks 作为元素，不再经过 RecursiveChunker 重分块。
+    """
     chef = MarkdownChef()
     doc = chef.process(file_path)
     elements = []
 
+    # doc.chunks 已经是语义分块结果，直接使用
     for chunk in doc.chunks:
-        elements.append({"type": "Text", "text": chunk.text, "metadata": {}})
+        text = chunk.text.strip()
+        if text:
+            elements.append({"type": "Text", "text": text, "metadata": {}})
 
     for table in doc.tables:
         elements.append({"type": "Table", "text": table.content, "metadata": {}})
@@ -91,10 +104,11 @@ def _parse_html(file_path: str) -> list[dict]:
 
 def _parse_epub(file_path: str) -> list[dict]:
     """解析 EPUB 文件"""
+    import ebooklib
     book = epub.read_epub(file_path)
     elements = []
     for item in book.get_items():
-        if item.get_type() == 1:
+        if item.get_type() == ebooklib.ITEM_DOCUMENT:
             soup = BeautifulSoup(item.get_content(), "html.parser")
             for tag in soup.find_all(["h1", "h2", "h3", "h4", "p", "li"]):
                 text_content = tag.get_text(separator=" ", strip=True)
@@ -122,6 +136,7 @@ _PARSERS = {
     "application/json": _parse_json,
     "text/html": _parse_html,
     "application/epub+zip": _parse_epub,
+    "application/epub": _parse_epub,
 }
 
 
@@ -134,7 +149,7 @@ class DocumentParser:
         parser = _PARSERS.get(mime)
         if parser:
             return parser(file_path)
-        return [{"type": "NarrativeText", "text": open(file_path, encoding="utf-8").read().strip(), "metadata": {}}]
+        return [{"type": "NarrativeText", "text": f"[无法解析: mime={mime}]", "metadata": {}}]
 
     def parse_text(self, text: str) -> list[dict]:
         """将纯文本转为元素列表（不分块，分块由 TextChunker 负责）"""

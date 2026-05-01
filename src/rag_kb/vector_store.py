@@ -66,38 +66,16 @@ def _compute_bm25_sparse(texts: list[str]) -> list[dict]:
     return sparse_vectors
 
 
-def upload_chunks(collection_name: str, config: dict, chunks: list[dict]) -> dict:
-    """
-    上传文本块到 Qdrant（dense + sparse 混合存储）
-
-    chunks: [{"text": str, "doc_id": str, "source": str, "chunk_index": int}, ...]
-    """
+def _build_points(chunks: list[dict], vectors: list, sparse_vectors: list | None, config: dict) -> list[PointStruct]:
+    """构建 Qdrant points"""
     from .embedding import create_embedding_from_config
-    emb_cfg = config.get("embedding", {})
-    embed_model = create_embedding_from_config(emb_cfg)
-
-    client = get_client(config)
-    ensure_collection(client, collection_name, config)
-
-    # 获取 dense embedding
-    texts = [c["text"] for c in chunks]
-    vectors = embed_model.embed_batch(texts)
-
-    # 计算 BM25 sparse vectors
-    qdrant_cfg = config.get("qdrant", {})
-    enable_sparse = qdrant_cfg.get("enable_sparse", True)
-    sparse_vectors = _compute_bm25_sparse(texts) if enable_sparse else None
-
-    # 构建 points
     points = []
     for i, (chunk, vector) in enumerate(zip(chunks, vectors)):
         unique_id = int(hashlib.md5(f"{chunk['doc_id']}_{chunk['chunk_index']}".encode()).hexdigest()[:8], 16)
-        point_dict = {
-            "dense": vector
-        }
-        if sparse_vectors and enable_sparse:
+        point_dict = {"dense": vector}
+        qdrant_cfg = config.get("qdrant", {})
+        if qdrant_cfg.get("enable_sparse", True) and sparse_vectors:
             point_dict["sparse"] = sparse_vectors[i]
-
         points.append(PointStruct(
             id=unique_id,
             vector=point_dict,
@@ -108,9 +86,42 @@ def upload_chunks(collection_name: str, config: dict, chunks: list[dict]) -> dic
                 "chunk_index": chunk["chunk_index"]
             }
         ))
+    return points
 
-    client.upsert(collection_name=collection_name, points=points, wait=True)
-    return {"success": True, "count": len(points)}
+
+def upload_chunks(collection_name: str, config: dict, chunks: list[dict]) -> dict:
+    """
+    上传文本块到 Qdrant（dense + sparse 混合存储），批量上传避免超限
+
+    chunks: [{"text": str, "doc_id": str, "source": str, "chunk_index": int}, ...]
+    """
+    from .embedding import create_embedding_from_config
+    emb_cfg = config.get("embedding", {})
+    embed_model = create_embedding_from_config(emb_cfg)
+
+    client = get_client(config)
+    ensure_collection(client, collection_name, config)
+
+    # 计算所有 dense 和 sparse 向量
+    texts = [c["text"] for c in chunks]
+    vectors = embed_model.embed_batch(texts)
+
+    qdrant_cfg = config.get("qdrant", {})
+    enable_sparse = qdrant_cfg.get("enable_sparse", True)
+    sparse_vectors = _compute_bm25_sparse(texts) if enable_sparse else None
+
+    # 批量构建 points，每批最多 256 个（Qdrant 限制），逐批上传避免超时
+    batch_size = 256
+    total = len(chunks)
+    for start in range(0, total, batch_size):
+        end = min(start + batch_size, total)
+        batch_chunks = chunks[start:end]
+        batch_vectors = vectors[start:end]
+        batch_sparse = sparse_vectors[start:end] if sparse_vectors else None
+        points = _build_points(batch_chunks, batch_vectors, batch_sparse, config)
+        client.upsert(collection_name=collection_name, points=points, wait=True)
+
+    return {"success": True, "count": total}
 
 
 def search_chunks(query: str, collection_name: str, config: dict, top_k: int = 5) -> dict:

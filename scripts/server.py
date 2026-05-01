@@ -71,11 +71,7 @@ async def upload_file(file: UploadFile = File(...), collection: str = Form("defa
         # 保存文件到服务端
         file_content = await file.read()
         original_name = file.filename or "uploaded_file"
-        # 只保留原始文件扩展名，避免文件名编码问题
-        import re
-        ext = re.search(r"(\.[^.]+)$", original_name)
-        ext_str = ext.group(1) if ext else ""
-        safe_name = f"{hashlib.md5(file_content).hexdigest()[:8]}{ext_str}"
+        safe_name = f"{hashlib.md5(file_content).hexdigest()[:8]}_{original_name}"
         file_path = UPLOAD_DIR / safe_name
 
         with open(file_path, "wb") as f:
@@ -89,7 +85,8 @@ async def upload_file(file: UploadFile = File(...), collection: str = Form("defa
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"服务器错误: {str(e)}")
+        import traceback
+        raise HTTPException(status_code=500, detail=f"服务器错误: {traceback.format_exc()}")
     finally:
         # 删除上传的临时文件
         if file_path and file_path.exists():

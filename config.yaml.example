@@ -26,10 +26,9 @@ embedding:
 
 # ============ 分块配置 ============
 chunking:
-  chunk_size: 800
-  chunk_overlap: 100
-  # SemanticChunker 使用的 embedding 模型（用于句子相似度计算）
-  embedding_model: "minishlab/potion-base-32M"
+  chunk_size: 800  # 每块目标字符数（RecursiveChunker 会尽量填满到此大小）
+  # strategy: recursive  # 分块策略：recursive（默认）/ semantic（保留语义边界）
+  # 不同文件类型可用不同策略，参见 text_chunker.FILE_CHUNKER_STRATEGIES
 
 # ============ CLI 默认值 ============
 default_collection: default
